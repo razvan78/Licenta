@@ -5,7 +5,7 @@ package com.example.victor.licenta.modelClass;
  */
 
 public interface INformer {
-    void inform();
+    void inform(String message);
     String getName();
 
     /**

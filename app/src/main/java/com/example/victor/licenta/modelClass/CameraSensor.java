@@ -6,6 +6,7 @@ package com.example.victor.licenta.modelClass;
 
 public class CameraSensor implements ISensor {
 
+    
     @Override
     public void startWorking() {
 
@@ -20,4 +21,6 @@ public class CameraSensor implements ISensor {
     public String getName() {
         return null;
     }
+
+
 }

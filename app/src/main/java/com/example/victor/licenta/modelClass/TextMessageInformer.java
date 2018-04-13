@@ -17,11 +17,11 @@ public class TextMessageInformer implements INformer {
     }
 
     @Override
-    public void inform() {
+    public void inform(String message) {
         //TODO: take data from DataManager
      MainActivity.currentActivity.runOnUiThread(()->{
             SmsManager sender = SmsManager.getDefault();
-            sender.sendTextMessage(number,null,"text de test",null,null);
+            sender.sendTextMessage(number,null,message,null,null);
         });
 
 

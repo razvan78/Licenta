@@ -2,6 +2,7 @@ package com.example.victor.licenta.backend;
 
 import android.util.Log;
 
+import com.example.victor.licenta.events.ApplicationStartedEvent;
 import com.example.victor.licenta.events.ThreatFoundEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -47,8 +48,13 @@ public class SecurityManager extends Manager{
       @Subscribe
       public void onThreatReceived(ThreatFoundEvent threatEvent){
           Log.d("DANGER",threatEvent.getMessage());
-          informerManager.inform();
+          informerManager.inform(threatEvent.getMessage());
+      }
 
+      @Subscribe
+      public void onApplicationStarted(ApplicationStartedEvent startedEvent){
+          Log.d("START",startedEvent.getMessage());
+          informerManager.inform(startedEvent.getMessage());
       }
   }
 }

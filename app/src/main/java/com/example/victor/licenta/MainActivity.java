@@ -20,6 +20,7 @@ import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.example.victor.licenta.UI.ConfigureActivity;
 import com.example.victor.licenta.backend.BackendManager;
 import com.example.victor.licenta.data.DataManager;
+import com.example.victor.licenta.events.ApplicationStartedEvent;
 import com.example.victor.licenta.events.ThreatFoundEvent;
 import com.example.victor.licenta.util.StoppableTimer;
 import com.example.victor.licenta.util.ToastMaker;
@@ -97,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         //TODO:: inform user here if notify is checked
                         BackendManager.getInstance().start();
-                        EventBus.getDefault().post(new ThreatFoundEvent("something here"));
+                        EventBus.getDefault().post(new ApplicationStartedEvent("Application has started"));
                         runOnUiThread(() -> {
                             tost.show("Application has started");
                         });

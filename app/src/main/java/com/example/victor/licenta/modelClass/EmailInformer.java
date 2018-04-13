@@ -21,7 +21,7 @@ public class EmailInformer implements INformer {
     }
 
     @Override
-    public void inform() {
+    public void inform(String message) {
 
         //TODO: take all data from DataManager
         //TODO: refactor all to intent
@@ -32,7 +32,7 @@ public class EmailInformer implements INformer {
                     .withMailto(emailAdress)
                     .withType(BackgroundMail.TYPE_PLAIN)
                     .withSubject("Subiect de test")
-                    .withBody("Alerta!")
+                    .withBody(message)
                     .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
                         @Override
                         public void onSuccess() {

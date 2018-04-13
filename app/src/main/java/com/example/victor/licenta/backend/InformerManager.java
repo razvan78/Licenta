@@ -51,9 +51,9 @@ public class InformerManager extends  Manager{
         }
     }
 
-    public void inform(){
+    public void inform(String message){
         for(INformer i:informers){
-            i.inform();
+            i.inform(message);
         }
     }
 

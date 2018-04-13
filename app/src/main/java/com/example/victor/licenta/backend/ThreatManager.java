@@ -3,6 +3,7 @@ package com.example.victor.licenta.backend;
 import com.example.victor.licenta.errorsAndExceptions.UnableToAddSensorException;
 import com.example.victor.licenta.errorsAndExceptions.UnableToRemoveSensorException;
 import com.example.victor.licenta.modelClass.AudioSensor;
+import com.example.victor.licenta.modelClass.CameraSensor;
 import com.example.victor.licenta.modelClass.ISensor;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class ThreatManager extends Manager{
     @Override
     protected void attachImplementationAndInitialize() {
         sensors = new ArrayList<ISensor>() ;
+        sensors.add(new CameraSensor());
         impl = new ThreatManagerImpl();
     }
 
