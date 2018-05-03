@@ -3,12 +3,15 @@ package com.example.victor.licenta;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.util.EventLog;
 import android.util.Log;
+import android.view.TextureView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,9 +43,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     private StoppableTimer timer;
-    private ToastMaker tost;
+    public static ToastMaker tost;
     public static Activity currentActivity;
-
+    public static TextureView textureView;
+    public static Button btnCapture;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +72,8 @@ public class MainActivity extends AppCompatActivity {
         stopButton = (Button) findViewById(R.id.stopButton);
         configButton = (Button) findViewById(R.id.configButton);
         timeUnitSpinenr = (Spinner) findViewById(R.id.timeUnitSpinner);
+        textureView = (TextureView) findViewById(R.id.textureView);
+        btnCapture = (Button) findViewById(R.id.btnCapture);
     }
 
     private void setUI() {
@@ -79,6 +85,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == REQUEST_CAMERA_PERMISSION)
+        {
+            if(grantResults[0] != PackageManager.PERMISSION_GRANTED)
+            {
+                Toast.makeText(this, "You can't use camera without permission", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+    private static final int REQUEST_CAMERA_PERMISSION = 200;
     private void addListeners() {
         startButton.setOnClickListener((e) -> {
             if (!BackendManager.getInstance().isWorking()) {
@@ -93,11 +111,12 @@ public class MainActivity extends AppCompatActivity {
                 {
                     waitTime *= 60;
                 }
+                BackendManager.getInstance().start();
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
                         //TODO:: inform user here if notify is checked
-                        BackendManager.getInstance().start();
+
                         EventBus.getDefault().post(new ApplicationStartedEvent("Application has started"));
                         runOnUiThread(() -> {
                             tost.show("Application has started");

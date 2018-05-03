@@ -54,6 +54,9 @@ public class ConfigureActivity extends AppCompatActivity {
         notifOnStartcheck.setChecked(myConfig.getNotifOnStart());
         emailEditor.setText(myConfig.getEmail());
         numberEditor.setText(myConfig.getPhoneNumber());
+
+        //TODO: this saveConfig is used here because it has add informer, get rid of it!
+        saveConfig();
         //TODO:Load previous config
     }
 
@@ -68,6 +71,8 @@ public class ConfigureActivity extends AppCompatActivity {
     }
 
     private void saveConfig(){
+
+        //TODO: this is extremly bad because it stacks informers, they need to be deleted and added again
         myConfig.setNotifOnStart(notifOnStartcheck.isChecked());
         //TODO: validate those 2
         final String email = emailEditor.getText().toString();
