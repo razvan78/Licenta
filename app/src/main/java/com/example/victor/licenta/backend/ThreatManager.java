@@ -1,8 +1,5 @@
 package com.example.victor.licenta.backend;
 
-import com.example.victor.licenta.errorsAndExceptions.UnableToAddSensorException;
-import com.example.victor.licenta.errorsAndExceptions.UnableToRemoveSensorException;
-import com.example.victor.licenta.modelClass.AudioSensor;
 import com.example.victor.licenta.modelClass.CameraSensor;
 import com.example.victor.licenta.modelClass.ISensor;
 
@@ -13,44 +10,51 @@ import java.util.List;
  * Created by Victor on 3/3/2018.
  */
 
-public class ThreatManager extends Manager{
+public class ThreatManager extends Manager {
 
+    private static ThreatManager instance;
     private List<ISensor> sensors;
-    public ThreatManager(){
+
+    private ThreatManager() {
         super();
     }
 
-    public void addSensor(ISensor s) throws UnableToAddSensorException{
-        if(!sensors.add(s)){
-            throw new UnableToAddSensorException(s.getName());
+    public static ThreatManager getInstance() {
+        if (instance == null) {
+            instance = new ThreatManager();
         }
+        return instance;
     }
 
-    public void removeSensor(ISensor s) throws UnableToRemoveSensorException{
-        if(!sensors.remove(s)){
-            throw new UnableToRemoveSensorException(s.getName());
-        }
+    public void addSensor(ISensor s) {
+        sensors.add(s);
     }
 
+    public void removeSensor(ISensor s) {
+        sensors.remove(s);
+    }
+
+    public void clear(){
+        sensors.clear();
+    }
     @Override
     protected void attachImplementationAndInitialize() {
-        sensors = new ArrayList<ISensor>() ;
-        sensors.add(new CameraSensor());
+        sensors = new ArrayList<ISensor>();
         impl = new ThreatManagerImpl();
     }
 
-    private class ThreatManagerImpl implements ManagerImplementation{
+    private class ThreatManagerImpl implements ManagerImplementation {
 
         @Override
         public void work() {
-            for(ISensor s: sensors){
+            for (ISensor s : sensors) {
                 s.startWorking();
             }
         }
 
         @Override
         public void stopWorking() {
-            for(ISensor s: sensors){
+            for (ISensor s : sensors) {
                 s.stopWorking();
             }
         }

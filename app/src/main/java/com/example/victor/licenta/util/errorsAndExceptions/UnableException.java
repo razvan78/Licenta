@@ -1,4 +1,4 @@
-package com.example.victor.licenta.errorsAndExceptions;
+package com.example.victor.licenta.util.errorsAndExceptions;
 
 /**
  * Created by Victor on 3/4/2018.

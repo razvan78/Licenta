@@ -68,6 +68,30 @@
             app:layout_constraintTop_toBottomOf="@+id/textView3" />
 
         <EditText
+            android:id="@+id/audioDecibelsEdit"
+            android:layout_width="194dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:inputType="number"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/phoneNumberConfig" />
+
+        <TextView
+            android:id="@+id/audioDecibelsTextView"
+            android:layout_width="132dp"
+            android:layout_height="31dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="12dp"
+            android:text="Decibels Threshhold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.692"
+            app:layout_constraintStart_toEndOf="@+id/phoneNumberConfig"
+            app:layout_constraintTop_toBottomOf="@+id/phoneNumberConfig" />
+
+        <EditText
             android:id="@+id/emailConfigEditor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -78,6 +102,42 @@
             android:text="no email set"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/notifyOnStartCheck" />
+
+        <CheckBox
+            android:id="@+id/activateAudioCheckBox"
+            android:layout_width="370dp"
+            android:layout_height="49dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Activate Audio module"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/audioDecibelsEdit" />
+
+        <CheckBox
+            android:id="@+id/activateCameraCheckBox"
+            android:layout_width="370dp"
+            android:layout_height="49dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Activate Camera module"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/activateAudioCheckBox" />
+
+        <CheckBox
+            android:id="@+id/useFrontCameraCheckBkox"
+            android:layout_width="370dp"
+            android:layout_height="49dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Use front camera"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/activateCameraCheckBox" />
 
         <TextView
             android:id="@+id/textView3"

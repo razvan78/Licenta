@@ -11,21 +11,20 @@ import com.example.victor.licenta.MainActivity;
 public class TextMessageInformer implements INformer {
 
     private String number;
+    private boolean active = true;
 
-    public TextMessageInformer(String number){
+    public TextMessageInformer(String number) {
         this.number = number;
     }
 
     @Override
     public void inform(String message) {
-        //TODO: take data from DataManager
-     MainActivity.currentActivity.runOnUiThread(()->{
-            SmsManager sender = SmsManager.getDefault();
-            sender.sendTextMessage(number,null,message,null,null);
-        });
-
-
-        //TODO: more research here
+        if (active) {
+            MainActivity.currentActivity.runOnUiThread(() -> {
+                SmsManager sender = SmsManager.getDefault();
+                sender.sendTextMessage(number, null, message, null, null);
+            });
+        }
     }
 
     @Override
@@ -35,11 +34,11 @@ public class TextMessageInformer implements INformer {
 
     @Override
     public void setInformer() {
-        //TODO: set the configuration here
+        active = true;
     }
 
     @Override
     public void deactivate() {
-    //TODO: deactivate here the configuration
+        active = false;
     }
 }

@@ -17,32 +17,41 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.example.victor.licenta.MainActivity;
+import com.example.victor.licenta.data.DataManager;
+import com.example.victor.licenta.util.StoppableTimer;
+import com.example.victor.licenta.util.events.ThreatFoundEvent;
 import com.example.victor.licenta.util.ToastMaker;
 
+import org.greenrobot.eventbus.EventBus;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 /**
@@ -53,11 +62,12 @@ public class CameraSensor implements ISensor {
 
     //Check state orientation of output image
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    static{
-        ORIENTATIONS.append(Surface.ROTATION_0,90);
-        ORIENTATIONS.append(Surface.ROTATION_90,0);
-        ORIENTATIONS.append(Surface.ROTATION_180,270);
-        ORIENTATIONS.append(Surface.ROTATION_270,180);
+
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
     private String cameraId;
@@ -68,7 +78,6 @@ public class CameraSensor implements ISensor {
     private ImageReader imageReader;
 
 
-    //Save to FILE TODO: make send to server
     private File file;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private boolean mFlashSupported;
@@ -90,47 +99,42 @@ public class CameraSensor implements ISensor {
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int i) {
             cameraDevice.close();
-            cameraDevice=null;
+            cameraDevice = null;
         }
     };
-    private Button btnCapture;
+
     private TextureView textureView;
+
     public CameraSensor() {
         ToastMaker.show("camera is ON");
-        btnCapture = MainActivity.btnCapture;
+
         textureView = MainActivity.textureView;
-        assert textureView != null;
-
+        TextureView.SurfaceTextureListener aux = textureView.getSurfaceTextureListener();
+        if(aux!=null){
+            textureView.setSurfaceTextureListener(null);
+        }
         textureView.setSurfaceTextureListener(textureListener);
-
-        btnCapture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                takePicture();
-            }
-        });
     }
 
     private void takePicture() {
-        if(cameraDevice == null)
+        if (cameraDevice == null)
             return;
-        CameraManager manager = (CameraManager)MainActivity.currentActivity.getSystemService(Context.CAMERA_SERVICE);
-        try{
+
+
+        CameraManager manager = (CameraManager) MainActivity.currentActivity.getSystemService(Context.CAMERA_SERVICE);
+        try {
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
             Size[] jpegSizes = null;
-            if(characteristics != null)
+            if (characteristics != null)
                 jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
                         .getOutputSizes(ImageFormat.JPEG);
 
-            //Capture image with custom size
+            //Marimea Camerei
             int width = 640;
             int height = 480;
-            if(jpegSizes != null && jpegSizes.length > 0)
-            {
-                width = jpegSizes[0].getWidth();
-                height = jpegSizes[0].getHeight();
-            }
-            final ImageReader reader = ImageReader.newInstance(width,height,ImageFormat.JPEG,1);
+
+
+            final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             List<Surface> outputSurface = new ArrayList<>(2);
             outputSurface.add(reader.getSurface());
             outputSurface.add(new Surface(textureView.getSurfaceTexture()));
@@ -141,54 +145,42 @@ public class CameraSensor implements ISensor {
 
             //Check orientation base on device
             int rotation = MainActivity.currentActivity.getWindowManager().getDefaultDisplay().getRotation();
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,ORIENTATIONS.get(rotation));
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
 
-            file = new File(Environment.getExternalStorageDirectory()+"/"+ UUID.randomUUID().toString()+".jpg");
+            file = new File(Environment.getExternalStorageDirectory() + "/" + UUID.randomUUID().toString() + ".jpg");
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
                     Image image = null;
-                    try{
+                    try {
                         image = reader.acquireLatestImage();
+
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
-                        save(bytes);
 
-                    }
-                    catch (FileNotFoundException e)
-                    {
+
+                        sendToServer(bytes);
+
+                    } catch (FileNotFoundException e) {
                         e.printStackTrace();
-                    }
-                    catch (IOException e)
-                    {
+                    } catch (IOException e) {
                         e.printStackTrace();
-                    }
-                    finally {
+                    } finally {
                         {
-                            if(image != null)
+                            if (image != null)
                                 image.close();
                         }
                     }
                 }
-                private void save(byte[] bytes) throws IOException {
-                    OutputStream outputStream = null;
-                    try{
-                        outputStream = new FileOutputStream(file);
-                        outputStream.write(bytes);
-                    }finally {
-                        if(outputStream != null)
-                            outputStream.close();
-                    }
-                }
+
             };
 
-            reader.setOnImageAvailableListener(readerListener,mBackgroundHandler);
+            reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
             final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                   ToastMaker.show("Saved "+file);
                     createCameraPreview();
                 }
             };
@@ -196,8 +188,8 @@ public class CameraSensor implements ISensor {
             cameraDevice.createCaptureSession(outputSurface, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    try{
-                        cameraCaptureSession.capture(captureBuilder.build(),captureListener,mBackgroundHandler);
+                    try {
+                        cameraCaptureSession.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -207,7 +199,7 @@ public class CameraSensor implements ISensor {
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
 
                 }
-            },mBackgroundHandler);
+            }, mBackgroundHandler);
 
 
         } catch (CameraAccessException e) {
@@ -215,18 +207,70 @@ public class CameraSensor implements ISensor {
         }
     }
 
+    private void sendToServer(byte[] bytes) throws IOException {
+
+        new Thread(() -> {
+            try {
+                StoppableTimer timer = new StoppableTimer();
+                long time = 5000;
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        EventBus.getDefault().post(new ThreatFoundEvent("Connection with the server has been lost"));
+                        stopBackgroundThread();
+                    }
+                }, time);
+                Socket s = new Socket("86.122.175.119", 3000);
+                DataOutputStream dOut = new DataOutputStream(s.getOutputStream());
+                timer.cancel();
+                dOut.writeInt(bytes.length);
+                dOut.write(bytes);
+                dOut.flush();
+                //  dOut.close();
+
+
+                Thread.sleep(1000);
+                DataInputStream dIn = new DataInputStream(s.getInputStream());
+
+
+                boolean dangerFound = dIn.readBoolean();
+
+
+
+                if (dangerFound) {
+                    Log.d("DANGE", "am pus eventul");
+                    for (int i = 0; i < 4; i++) {
+                        EventBus.getDefault().post(new ThreatFoundEvent("Camera Sensor has detected an intruder"));
+                    }
+                    stopBackgroundThread();
+
+
+                }
+                Log.d("RASPUNS", dangerFound + "");
+                dIn.close();
+            } catch (IOException er) {
+                EventBus.getDefault().post(new ThreatFoundEvent("Connection with the server has been lost"));
+                stopBackgroundThread();
+                er.printStackTrace();
+
+            } catch (InterruptedException er) {
+                er.printStackTrace();
+            }
+        }).start();
+    }
+
     private void createCameraPreview() {
-        try{
+        try {
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            assert  texture != null;
-            texture.setDefaultBufferSize(imageDimension.getWidth(),imageDimension.getHeight());
+            assert texture != null;
+            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
             Surface surface = new Surface(texture);
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
             cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    if(cameraDevice == null)
+                    if (cameraDevice == null)
                         return;
                     cameraCaptureSessions = cameraCaptureSession;
                     updatePreview();
@@ -234,44 +278,44 @@ public class CameraSensor implements ISensor {
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-                ToastMaker.show("Changed");
+                    ToastMaker.show("Changed");
                 }
-            },null);
+            }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
     private void updatePreview() {
-        if(cameraDevice == null)
-          ToastMaker.show("Error");
-        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE,CaptureRequest.CONTROL_MODE_AUTO);
-        try{
-            cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(),null,mBackgroundHandler);
+        if (cameraDevice == null)
+            ToastMaker.show("Error");
+        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+        try {
+            cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
-    //TODO: optional front camera to be used
+
     private void openCamera() {
-        CameraManager manager = (CameraManager)MainActivity.currentActivity.getSystemService(Context.CAMERA_SERVICE);
-        try{
-            cameraId = manager.getCameraIdList()[1];
+        CameraManager manager = (CameraManager) MainActivity.currentActivity.getSystemService(Context.CAMERA_SERVICE);
+        try {
+            int numberOfCamera = DataManager.getInstance().getAppConfig().isUseFrontCamera() ? 1 : 0;
+            cameraId = manager.getCameraIdList()[numberOfCamera];
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assert map != null;
             imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
             //Check realtime permission if run higher API 23
-            if(ActivityCompat.checkSelfPermission(MainActivity.currentActivity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
-            {
-                ActivityCompat.requestPermissions(MainActivity.currentActivity,new String[]{
+            if (ActivityCompat.checkSelfPermission(MainActivity.currentActivity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.currentActivity, new String[]{
                         Manifest.permission.CAMERA,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE
-                },REQUEST_CAMERA_PERMISSION);
+                }, REQUEST_CAMERA_PERMISSION);
                 return;
             }
-            manager.openCamera(cameraId,stateCallback,null);
+            manager.openCamera(cameraId, stateCallback, null);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -281,7 +325,9 @@ public class CameraSensor implements ISensor {
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-            openCamera();
+            MainActivity.currentActivity.runOnUiThread(() -> {
+                openCamera();
+            });
         }
 
         @Override
@@ -300,16 +346,25 @@ public class CameraSensor implements ISensor {
         }
     };
 
-
-
     @Override
     public void startWorking() {
+        MainActivity.currentActivity.runOnUiThread(() -> {
+            startBackgroundThread();
+            if (textureView.isAvailable())
+                openCamera();
+            else
+                textureView.setSurfaceTextureListener(textureListener);
 
-        startBackgroundThread();
-        if(textureView.isAvailable())
-            openCamera();
-        else
-            textureView.setSurfaceTextureListener(textureListener);
+            new Timer().scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (mBackgroundThread != null)
+                        takePicture();
+                }
+            }, 3000, 3000);
+
+        });
+
     }
 
     private void startBackgroundThread() {
@@ -323,16 +378,20 @@ public class CameraSensor implements ISensor {
         stopBackgroundThread();
 
     }
+
     private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try{
-            mBackgroundThread.join();
-            mBackgroundThread= null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (mBackgroundThread != null) {
+            mBackgroundThread.quitSafely();
+            try {
+                mBackgroundThread.join();
+                mBackgroundThread = null;
+                mBackgroundHandler = null;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
+
     @Override
     public String getName() {
         return null;

@@ -1,36 +1,27 @@
 package com.example.victor.licenta;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.telephony.SmsManager;
-import android.util.EventLog;
-import android.util.Log;
 import android.view.TextureView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.example.victor.licenta.UI.ConfigureActivity;
 import com.example.victor.licenta.backend.BackendManager;
 import com.example.victor.licenta.data.DataManager;
-import com.example.victor.licenta.events.ApplicationStartedEvent;
-import com.example.victor.licenta.events.ThreatFoundEvent;
+import com.example.victor.licenta.util.events.ApplicationStartedEvent;
 import com.example.victor.licenta.util.StoppableTimer;
 import com.example.victor.licenta.util.ToastMaker;
 
 import org.greenrobot.eventbus.EventBus;
 
-import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     public static ToastMaker tost;
     public static Activity currentActivity;
     public static TextureView textureView;
-    public static Button btnCapture;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         DataManager.getInstance().loadFromDevice();
         loadUI();
         setUI();
+        startConfigureActivity(true);
     }
 
     @Override
@@ -73,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         configButton = (Button) findViewById(R.id.configButton);
         timeUnitSpinenr = (Spinner) findViewById(R.id.timeUnitSpinner);
         textureView = (TextureView) findViewById(R.id.textureView);
-        btnCapture = (Button) findViewById(R.id.btnCapture);
+
     }
 
     private void setUI() {
@@ -99,6 +91,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private void addListeners() {
         startButton.setOnClickListener((e) -> {
+
+
             if (!BackendManager.getInstance().isWorking()) {
                 if (timer != null && timer.hasStartedTimer()) {
                     timer.cancel();
@@ -111,14 +105,15 @@ public class MainActivity extends AppCompatActivity {
                 {
                     waitTime *= 60;
                 }
-                BackendManager.getInstance().start();
+
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        //TODO:: inform user here if notify is checked
-
-                        EventBus.getDefault().post(new ApplicationStartedEvent("Application has started"));
+                        BackendManager.getInstance().start();
+                        if(DataManager.getInstance().getAppConfig().getNotifOnStart())
+                        { EventBus.getDefault().post(new ApplicationStartedEvent("Application has started"));}
                         runOnUiThread(() -> {
+
                             tost.show("Application has started");
                         });
                     }
@@ -151,10 +146,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         configButton.setOnClickListener((e) -> {
-            final Intent configIntent = new Intent(this, ConfigureActivity.class);
-            startActivity(configIntent);
-            //TODO: start configuration activity here
+            startConfigureActivity(false);
         });
+    }
+
+    private void startConfigureActivity(boolean atStartup) {
+        final Intent configIntent = new Intent(this, ConfigureActivity.class);
+        configIntent.putExtra("Start",atStartup);
+        startActivity(configIntent);
     }
 
 

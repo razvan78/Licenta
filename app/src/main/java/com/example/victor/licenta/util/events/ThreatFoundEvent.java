@@ -1,4 +1,4 @@
-package com.example.victor.licenta.events;
+package com.example.victor.licenta.util.events;
 
 /**
  * Created by Victor on 3/4/2018.

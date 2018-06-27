@@ -1,10 +1,6 @@
 package com.example.victor.licenta.backend;
 
-import com.example.victor.licenta.errorsAndExceptions.UnableToAddInformerException;
-import com.example.victor.licenta.errorsAndExceptions.UnableToRemoveInformerException;
-import com.example.victor.licenta.modelClass.EmailInformer;
 import com.example.victor.licenta.modelClass.INformer;
-import com.example.victor.licenta.modelClass.TextMessageInformer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,10 +26,9 @@ public class InformerManager extends  Manager{
         }
         return instance;
     }
-    public  void addInformer(INformer i) throws UnableToAddInformerException {
-       if(! informers.add(i)){
-           throw new UnableToAddInformerException(i.getName());
-       }
+    public  void addInformer(INformer i) {
+      informers.add(i);
+
     }
 
     public boolean containsInformer(INformer i){
@@ -45,10 +40,12 @@ public class InformerManager extends  Manager{
         return false;
     }
 
-    public void removeInformer(INformer i) throws UnableToRemoveInformerException{
-        if(!informers.remove(i)){
-            throw new UnableToRemoveInformerException(i.getName());
-        }
+    public void removeInformer(INformer i) {
+        informers.remove(i);
+    }
+
+    public void clear(){
+        informers.clear();
     }
 
     public void inform(String message){

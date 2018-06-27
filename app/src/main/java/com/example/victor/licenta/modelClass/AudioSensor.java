@@ -6,7 +6,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.example.victor.licenta.data.DataManager;
-import com.example.victor.licenta.events.ThreatFoundEvent;
+import com.example.victor.licenta.util.events.ThreatFoundEvent;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -29,7 +29,7 @@ public class AudioSensor implements ISensor {
     }
 
     @NonNull
-    private  synchronized File getFile() {
+    private synchronized File getFile() {
         File path = Environment.getExternalStorageDirectory();
         File f = new File(path.getAbsolutePath() + "/Download/audiorecordtest.3gp");
 
@@ -50,7 +50,7 @@ public class AudioSensor implements ISensor {
     @Override
     public void startWorking() {
         audioThread = new AudioThread();
-      audioThread.start();
+        audioThread.start();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class AudioSensor implements ISensor {
         return amplitude > 0 ? (20 * Math.log10(amplitude / REFERENCE)) : 0;
     }
 
-    private synchronized void setRecorder(File f){
+    private synchronized void setRecorder(File f) {
         mediaRecorder.reset();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -77,42 +77,48 @@ public class AudioSensor implements ISensor {
     }
 
     private class AudioThread extends Thread {
-            public AudioThread() {
-                super();
-            }
-            //TODO: optimize? make a config for default?
-            //TODO: make this infinte loop
-            @Override
-            public void  run(){
-                try {
-                    for(int j=0;j<10;j++) {
-                        File f = getFile();
-                        setRecorder(f);
-                        mediaRecorder.prepare();
-                        mediaRecorder.start();
-                        for (int i = 0; i < 10; i++) {
-                            final double decibels = getDecibels(mediaRecorder.getMaxAmplitude());
-                            Log.d("Audio", i + " " + decibels + "");
-
-                            //TODO: trigger here Audio found threat
-                           /* if (decibels > DataManager.getInstance().getValue(DataManager.DECIBEL).doubleValue()) {
-                                EventBus.getDefault().post(new ThreatFoundEvent("Audio gasit pericol"));
-                            }*/
-                            Thread.sleep(200);
-                        }
-                        mediaRecorder.stop();
-                        f.delete();
-                        Log.d("Audio", "Stop succesful");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Log.d("Audio", "unable to prepare");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-
+        public AudioThread() {
+            super();
         }
+
+        @Override
+        public void run() {
+            try {
+                for (int j = 0; true; j++) {
+                    File f = getFile();
+                    setRecorder(f);
+                    mediaRecorder.prepare();
+                    mediaRecorder.start();
+                    for (int i = 0; i < 10; i++) {
+                        final double decibels = getDecibels(mediaRecorder.getMaxAmplitude());
+                        Log.d("Audio", i + " " + decibels + "");
+
+
+                        if (decibels > (double) DataManager.getInstance().getAppConfig().getAudioThresh()) {
+                            for (int k = 0; k < 4; k++) {
+                                EventBus.getDefault().post(new ThreatFoundEvent("Audio sensor found threat"));
+                            }
+                            try {
+                                this.interrupt();
+                            } catch (Throwable throwable) {
+                                throwable.printStackTrace();
+                            }
+                        }
+                        Thread.sleep(200);
+                    }
+                    mediaRecorder.stop();
+                    f.delete();
+                    Log.d("Audio", "Stop succesful");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d("Audio", "unable to prepare");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
 
 }

@@ -15,6 +15,8 @@ public class EmailInformer implements INformer {
 
     private String emailAdress;
 
+    private boolean active = true;
+
     public EmailInformer(String emailAdress) {
         this.emailAdress = emailAdress;
 
@@ -23,33 +25,33 @@ public class EmailInformer implements INformer {
     @Override
     public void inform(String message) {
 
-        //TODO: take all data from DataManager
-        //TODO: refactor all to intent
-        MainActivity.currentActivity.runOnUiThread(() -> {
-            BackgroundMail.newBuilder(MainActivity.currentActivity)
-                    .withUsername("licenta.sender@gmail.com")
-                    .withPassword("parola1234")
-                    .withMailto(emailAdress)
-                    .withType(BackgroundMail.TYPE_PLAIN)
-                    .withSubject("Subiect de test")
-                    .withBody(message)
-                    .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Log.d("EMAIL", "succes");
-                        }
-                    })
-                    .withOnFailCallback(new BackgroundMail.OnFailCallback() {
-                        @Override
-                        public void onFail() {
-                            Log.d("EMAIL", "fail");
-                        }
-                    })
-                    .send();
+
+        if (active) {
+            MainActivity.currentActivity.runOnUiThread(() -> {
+                        BackgroundMail.newBuilder(MainActivity.currentActivity)
+                                .withUsername("licenta.sender@gmail.com")
+                                .withPassword("parola1234")
+                                .withMailto(emailAdress)
+                                .withType(BackgroundMail.TYPE_PLAIN)
+                                .withSubject("Home SecurityApp")
+                                .withBody(message)
+                                .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        Log.d("EMAIL", "succes");
+                                    }
+                                })
+                                .withOnFailCallback(new BackgroundMail.OnFailCallback() {
+                                    @Override
+                                    public void onFail() {
+                                        Log.d("EMAIL", "fail");
+                                    }
+                                })
+                                .send();
+                    }
+
+            );
         }
-
-        );
-
     }
 
     @Override
@@ -60,11 +62,11 @@ public class EmailInformer implements INformer {
 
     @Override
     public void setInformer() {
-        //TODO: set configuration here
+        active = true;
     }
 
     @Override
     public void deactivate() {
-        //TODO: deactivate the informer here
+        active = false;
     }
 }

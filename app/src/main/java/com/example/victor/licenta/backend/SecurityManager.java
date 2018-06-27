@@ -2,11 +2,12 @@ package com.example.victor.licenta.backend;
 
 import android.util.Log;
 
-import com.example.victor.licenta.events.ApplicationStartedEvent;
-import com.example.victor.licenta.events.ThreatFoundEvent;
+import com.example.victor.licenta.util.events.ApplicationStartedEvent;
+import com.example.victor.licenta.util.events.ThreatFoundEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 /**
  * Created by Victor on 3/3/2018.
@@ -17,9 +18,8 @@ public class SecurityManager extends Manager{
     private ThreatManager threatManager;
 
     public SecurityManager(){
-        //TODO: maybe backend should have getSecurity wich has get Informer
         informerManager = InformerManager.getInstance();
-        threatManager = new ThreatManager();
+        threatManager = ThreatManager.getInstance();
     }
 
     @Override
@@ -28,6 +28,9 @@ public class SecurityManager extends Manager{
     }
 
 
+    public ThreatManager getThreatManager(){
+        return threatManager;
+    }
 
   private class SecurityManagerImpl implements ManagerImplementation{
 
@@ -45,7 +48,7 @@ public class SecurityManager extends Manager{
           EventBus.getDefault().unregister(this);
       }
 
-      @Subscribe
+      @Subscribe(threadMode = ThreadMode.ASYNC)
       public void onThreatReceived(ThreatFoundEvent threatEvent){
           Log.d("DANGER",threatEvent.getMessage());
           informerManager.inform(threatEvent.getMessage());
